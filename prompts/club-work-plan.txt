@@ -1,0 +1,45 @@
+请根据我提供的社团基本信息，生成“社团工作计划”JSON。
+
+请只输出 JSON，不要输出解释文字，不要使用 Markdown 代码块。
+
+需要我提供的信息：
+- 社团名称
+- 社团主题或课程内容
+- 负责教师
+- 预计人数
+- 学段：junior 或 senior
+- 部门：国内部 或 国际部
+- 学年与学期
+- 学期起止时间或大致周数
+- 每月大致安排
+- 每周大致安排
+- 社团特色活动
+
+JSON 字段必须包含：
+{
+  "school_type": "junior",
+  "department": "国内部",
+  "department_en": "Domestic Department",
+  "academic_year": "2025-2026学年度",
+  "semester_name": "下学期",
+  "semester_en": "Second Semester of the 2025-2026 Academic Year",
+  "course_name": "社团名称",
+  "expected_participants": "预计人数",
+  "teacher_in_charge": "负责教师",
+  "guiding_ideology": ["指导思想，2-4条"],
+  "work_objectives": ["工作目标，3-5条"],
+  "key_work_priorities": ["工作重点，3-5条"],
+  "specific_measures": ["具体措施，4-6条"],
+  "monthly_plan": [
+    { "month": "三月", "content": "本月安排" }
+  ],
+  "weekly_plan": [
+    { "week_number": 1, "date_display": "3.1-3.7", "content": "本周安排" }
+  ],
+  "characteristic_activities": ["社团特色活动，3-5条"]
+}
+
+要求：
+1. 内容适合学校正式工作计划。
+2. monthly_plan 和 weekly_plan 不要为空。
+3. 中文为主，必要英文标题字段按示例填写。

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TeacHub</title>
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="top-nav">
+      <nav class="primary-tabs" aria-label="大类导航">
+        <button class="tab is-active" type="button" data-view="templates">模板填充</button>
+        <button class="tab" type="button" data-view="teaching">教学工具</button>
+        <button class="tab" type="button" data-view="office">办公工具</button>
+        <button class="tab" type="button" data-view="software">常用软件</button>
+      </nav>
+      <label class="search" aria-label="搜索工具">
+        <span aria-hidden="true">⌕</span>
+        <input id="search-input" type="search" placeholder="搜索工具、模板、用途">
+      </label>
+    </header>
+
+    <div class="page-grid">
+      <aside class="anchor-panel" aria-label="分类目录">
+        <div class="anchor-title" id="anchor-title">模板填充</div>
+        <nav class="anchor-list" id="anchor-list"></nav>
+      </aside>
+
+      <main class="content" id="content" tabindex="-1"></main>
+    </div>
+
+    <script src="assets/data.js"></script>
+    <script src="assets/app.js"></script>
+  </body>
+</html>

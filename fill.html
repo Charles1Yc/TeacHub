@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TeacHub - 模板填充</title>
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body class="fill-page">
+    <header class="fill-topbar">
+      <a class="back-link" href="index.html">← 返回首页</a>
+      <select id="template-select" aria-label="选择模板"></select>
+    </header>
+
+    <main class="fill-shell">
+      <section class="fill-panel template-panel">
+        <div class="fill-heading">
+          <span class="tool-icon blue" id="template-icon" aria-hidden="true">LP</span>
+          <div>
+            <p id="template-type">Word 模板</p>
+            <h1 id="template-title">Lesson Plan</h1>
+          </div>
+        </div>
+
+        <div class="fill-actions">
+          <button class="action" id="copy-prompt" type="button">复制 Prompt</button>
+          <button class="action secondary" id="load-sample" type="button">填入示例 JSON</button>
+        </div>
+
+        <div class="ai-panel" aria-label="AI 工具入口">
+          <p>打开 AI 工具</p>
+          <div class="ai-links">
+            <a class="ai-link chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT</a>
+            <a class="ai-link deepseek" href="https://chat.deepseek.com/" target="_blank" rel="noopener noreferrer">DeepSeek</a>
+            <a class="ai-link gemini" href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">Gemini</a>
+          </div>
+        </div>
+
+        <section class="prompt-preview fill-prompt">
+          <div class="prompt-head">
+            <strong>Prompt 预览</strong>
+          </div>
+          <pre id="prompt-text"></pre>
+        </section>
+      </section>
+
+      <section class="fill-panel editor-panel">
+        <div class="editor-head">
+          <div>
+            <p>AI 返回内容</p>
+            <h2>粘贴 JSON</h2>
+          </div>
+          <div class="editor-actions">
+            <button class="action secondary" id="validate-json" type="button">校验</button>
+            <button class="action" id="generate-file" type="button">生成下载</button>
+          </div>
+        </div>
+        <textarea id="json-input" spellcheck="false" placeholder="粘贴 AI 生成的 JSON。支持单个对象或对象数组。"></textarea>
+        <section class="image-upload-panel" id="image-panel" hidden>
+          <div>
+            <h3>添加图片</h3>
+            <p>可多次选择或拖入图片，按添加顺序排版。</p>
+          </div>
+          <input id="image-input" type="file" accept="image/*" multiple>
+          <div class="image-list" id="image-list"></div>
+        </section>
+        <div class="log-box" id="log-box">等待 JSON 输入。</div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="vendor/jszip.min.js"></script>
+    <script src="assets/template-assets.js"></script>
+    <script src="assets/template-registry.js"></script>
+    <script src="assets/fill.js"></script>
+  </body>
+</html>
