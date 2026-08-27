@@ -192,7 +192,11 @@ function parseInputJson() {
   if (items.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
     throw new Error("JSON 必须是对象，或对象数组。");
   }
-  return items.map((item) => normaliseItem(item, getConfig()));
+  const normalised = items.map((item) => normaliseItem(item, getConfig()));
+  if (getConfig().id === "course-syllabus" && normalised.some((item) => !item.teaching_plan.length)) {
+    throw new Error("课程大纲至少需要提供 1 条 teaching_plan。");
+  }
+  return normalised;
 }
 
 function normaliseItem(item, cfg) {
@@ -217,9 +221,29 @@ function normaliseItem(item, cfg) {
       return safeEntry;
     });
   });
+  if (cfg.id === "course-syllabus" && !output.teaching_plan.length) {
+    output.teaching_plan = getLegacyTeachingPlan(output);
+  }
   if (!Array.isArray(output.selected_6cs_indices)) output.selected_6cs_indices = [];
   output.cs_display = buildCsDisplay(output.selected_6cs_indices);
   return output;
+}
+
+function getLegacyTeachingPlan(data) {
+  const plan = [];
+  for (let week = 1; week <= 20; week += 1) {
+    const topic = data[`topic${week}`];
+    const keyContent = data[`key_content${week}`];
+    const keyObjectives = data[`key_objectives${week}`];
+    if ([topic, keyContent, keyObjectives].some((value) => String(value || "").trim())) {
+      plan.push({
+        topic: String(topic || " "),
+        key_content: String(keyContent || " "),
+        key_objectives: String(keyObjectives || " ")
+      });
+    }
+  }
+  return plan;
 }
 
 function getMissingKeys(item) {
@@ -290,7 +314,7 @@ async function renderDocx(data) {
 
   for (const path of xmlPaths) {
     const xml = await zip.file(path).async("string");
-    zip.file(path, renderWordXml(renderWordTableRows(xml, data), data));
+    zip.file(path, renderWordXml(xml, data));
   }
 
   return zip.generateAsync({
@@ -305,33 +329,169 @@ async function renderXlsx(data) {
   const xml = await zip.file(path).async("string");
   zip.file(path, renderSharedStringsXml(xml, data));
 
+  if (getConfig().id === "course-syllabus") {
+    const sheetPath = "xl/worksheets/sheet1.xml";
+    const sheetXml = await zip.file(sheetPath).async("string");
+    zip.file(sheetPath, renderCourseSyllabusSheetXml(sheetXml, data));
+  }
+
   return zip.generateAsync({
     type: "blob",
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   });
 }
 
-function renderWordXml(xml, data) {
+function renderCourseSyllabusSheetXml(xml, data) {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   if (doc.getElementsByTagName("parsererror").length) return xml;
-  const paragraphs = Array.from(doc.getElementsByTagName("w:p"));
 
-  paragraphs.forEach((paragraph) => {
-    const textNodes = Array.from(paragraph.getElementsByTagName("w:t"));
-    if (!textNodes.length) return;
-    const raw = textNodes.map((node) => node.textContent).join("");
-    if (!raw.includes("{{") && !raw.includes("{%")) return;
-    replaceParagraphText(doc, paragraph, renderTemplateText(raw, data));
+  const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+  const sheetData = doc.getElementsByTagName("sheetData")[0];
+  const rows = Array.from(sheetData.getElementsByTagName("row"));
+  const formatSource = rows.find((row) => Number(row.getAttribute("r")) === 18);
+  if (!formatSource) return xml;
+
+  rows
+    .filter((row) => Number(row.getAttribute("r")) >= 18)
+    .forEach((row) => row.remove());
+
+  data.teaching_plan.forEach((entry, index) => {
+    const rowNumber = 18 + index;
+    sheetData.appendChild(createCoursePlanRow(doc, ns, formatSource, rowNumber, index + 1, entry));
   });
+
+  const lastRow = 17 + data.teaching_plan.length;
+  const dimension = doc.getElementsByTagName("dimension")[0];
+  if (dimension) dimension.setAttribute("ref", `A1:F${lastRow}`);
+  updateCoursePlanMerges(doc, ns, lastRow);
 
   return new XMLSerializer().serializeToString(doc);
 }
 
-function renderWordTableRows(xml, data) {
-  return xml.replace(/<w:tr\b[\s\S]*?\{%tr for ([a-zA-Z]+) in ([a-zA-Z0-9_]+) %\}[\s\S]*?<\/w:tr>([\s\S]*?)<w:tr\b[\s\S]*?\{%tr endfor %\}[\s\S]*?<\/w:tr>/g, (_match, alias, key, templateRows) => {
+function createCoursePlanRow(doc, ns, formatSource, rowNumber, weekNumber, entry) {
+  const row = formatSource.cloneNode(false);
+  row.setAttribute("r", String(rowNumber));
+  row.setAttribute("spans", "1:6");
+
+  row.appendChild(createCoursePlanCell(doc, ns, `A${rowNumber}`, "5", weekNumber));
+  row.appendChild(createCoursePlanCell(doc, ns, `B${rowNumber}`, "6", entry.topic));
+  row.appendChild(createCoursePlanCell(doc, ns, `C${rowNumber}`, "6", entry.key_content));
+  row.appendChild(createCoursePlanCell(doc, ns, `D${rowNumber}`, "21", entry.key_objectives));
+  row.appendChild(createCoursePlanCell(doc, ns, `E${rowNumber}`, "21"));
+  row.appendChild(createCoursePlanCell(doc, ns, `F${rowNumber}`, "21"));
+  return row;
+}
+
+function createCoursePlanCell(doc, ns, reference, style, value) {
+  const cell = doc.createElementNS(ns, "c");
+  cell.setAttribute("r", reference);
+  cell.setAttribute("s", style);
+  if (value === undefined) return cell;
+
+  if (typeof value === "number") {
+    const number = doc.createElementNS(ns, "v");
+    number.textContent = String(value);
+    cell.appendChild(number);
+    return cell;
+  }
+
+  cell.setAttribute("t", "inlineStr");
+  const inline = doc.createElementNS(ns, "is");
+  const text = doc.createElementNS(ns, "t");
+  text.setAttribute("xml:space", "preserve");
+  text.textContent = String(value || " ");
+  inline.appendChild(text);
+  cell.appendChild(inline);
+  return cell;
+}
+
+function updateCoursePlanMerges(doc, ns, lastRow) {
+  const mergeCells = doc.getElementsByTagName("mergeCells")[0];
+  if (!mergeCells) return;
+
+  Array.from(mergeCells.getElementsByTagName("mergeCell"))
+    .filter((merge) => /^D(?:1[89]|[2-9][0-9]):F(?:1[89]|[2-9][0-9])$/.test(merge.getAttribute("ref") || ""))
+    .forEach((merge) => merge.remove());
+
+  for (let row = 18; row <= lastRow; row += 1) {
+    const merge = doc.createElementNS(ns, "mergeCell");
+    merge.setAttribute("ref", `D${row}:F${row}`);
+    mergeCells.appendChild(merge);
+  }
+  mergeCells.setAttribute("count", String(mergeCells.getElementsByTagName("mergeCell").length));
+}
+
+function renderWordXml(xml, data) {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) return xml;
+  renderWordTableRows(doc, data);
+  renderWordPlaceholdersInNode(doc, doc, data);
+
+  return new XMLSerializer().serializeToString(doc);
+}
+
+function renderWordTableRows(doc, data) {
+  const markerRows = Array.from(doc.getElementsByTagName("w:tr"))
+    .map((row) => {
+      const match = getNodeText(row).match(/{%tr for ([a-zA-Z]+) in ([a-zA-Z0-9_]+) %}/);
+      return match ? { row, alias: match[1], key: match[2] } : null;
+    })
+    .filter(Boolean);
+
+  markerRows.forEach(({ row, alias, key }) => {
+    if (!row.parentNode) return;
+    const table = row.parentNode;
+    const templateRows = [];
+    let endRow = null;
+    let current = row.nextSibling;
+
+    while (current) {
+      const next = current.nextSibling;
+      if (current.nodeType === Node.ELEMENT_NODE && current.nodeName === "w:tr") {
+        if (getNodeText(current).includes("{%tr endfor %}")) {
+          endRow = current;
+          break;
+        }
+        templateRows.push(current);
+      }
+      current = next;
+    }
+
+    if (!endRow) return;
     const rows = Array.isArray(data[key]) ? data[key] : [];
-    return rows.map((entry) => renderTemplateText(templateRows, { ...data, [alias]: entry })).join("");
+    rows.forEach((entry) => {
+      templateRows.forEach((templateRow) => {
+        const clone = templateRow.cloneNode(true);
+        renderWordPlaceholdersInNode(doc, clone, { ...data, [alias]: entry });
+        table.insertBefore(clone, row);
+      });
+    });
+
+    let removable = row;
+    while (removable) {
+      const next = removable.nextSibling;
+      table.removeChild(removable);
+      if (removable === endRow) break;
+      removable = next;
+    }
   });
+}
+
+function renderWordPlaceholdersInNode(doc, node, data) {
+  const paragraphs = Array.from(node.getElementsByTagName("w:p"));
+  paragraphs.forEach((paragraph) => {
+    const textNodes = Array.from(paragraph.getElementsByTagName("w:t"));
+    if (!textNodes.length) return;
+    const raw = textNodes.map((textNode) => textNode.textContent).join("");
+    if (!raw.includes("{{") && !raw.includes("{%")) return;
+    replaceParagraphText(doc, paragraph, renderTemplateText(raw, data));
+  });
+}
+
+function getNodeText(node) {
+  return Array.from(node.getElementsByTagName("w:t"))
+    .map((textNode) => textNode.textContent)
+    .join("");
 }
 
 function replaceParagraphText(doc, paragraph, text) {
@@ -374,7 +534,16 @@ function renderSharedStringsXml(xml, data) {
   return new XMLSerializer().serializeToString(doc);
 }
 
-function renderTemplateText(source, data) {
+function renderTemplateText(source, data, options = {}) {
+  const formatValue = (value) => {
+    if (Array.isArray(value)) {
+      const text = value.join("\n");
+      return options.escapeValues ? escapeXml(text) : text;
+    }
+    if (value === undefined || value === null) return " ";
+    const text = String(value);
+    return options.escapeValues ? escapeXml(text) : text;
+  };
   let out = source;
   out = out.replace(/{%\s*if\s+school_type\s*==\s*['"]([^'"]+)['"]\s*%}([\s\S]*?)(?:{%\s*else\s*%}([\s\S]*?))?{%\s*endif\s*%}/g, (_match, expected, yesBlock, noBlock = "") => {
     return String(data.school_type || "") === expected ? yesBlock : noBlock;
@@ -385,7 +554,7 @@ function renderTemplateText(source, data) {
     return list.map((value, index) => {
       return block
         .replace(/{{\s*loop\.index\s*}}/g, String(index + 1))
-        .replace(new RegExp(`{{\\s*${alias}\\s*}}`, "g"), String(value))
+        .replace(new RegExp(`{{\\s*${alias}\\s*}}`, "g"), formatValue(value))
         .replace(/{{\s*['"]\\n['"]\s*}}/g, "\n");
     }).join("").trimEnd();
   });
@@ -393,9 +562,7 @@ function renderTemplateText(source, data) {
   out = out.replace(/{{\s*['"]\\n['"]\s*}}/g, "\n");
   out = out.replace(/{{\s*([A-Za-z0-9_.]+)\s*}}/g, (_match, key) => {
     const value = getPath(data, key);
-    if (Array.isArray(value)) return value.join("\n");
-    if (value === undefined || value === null) return " ";
-    return String(value);
+    return formatValue(value);
   });
   return out;
 }

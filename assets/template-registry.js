@@ -8,11 +8,6 @@ const SIX_CS = [
 ];
 
 const TEMPLATE_REGISTRY = (() => {
-  const courseWeekKeys = [];
-  for (let i = 1; i <= 20; i += 1) {
-    courseWeekKeys.push(`topic${i}`, `key_content${i}`, `key_objectives${i}`);
-  }
-
   return {
     "lesson-plan": {
       id: "lesson-plan",
@@ -85,8 +80,7 @@ const TEMPLATE_REGISTRY = (() => {
         "instructor",
         "email",
         "grade",
-        "credit",
-        ...courseWeekKeys
+        "credit"
       ],
       listKeys: [
         "prerequisites_for_the_course",
@@ -95,6 +89,9 @@ const TEMPLATE_REGISTRY = (() => {
         "student_learning_outcomes",
         "course_requirements"
       ],
+      dictListKeys: {
+        teaching_plan: ["topic", "key_content", "key_objectives"]
+      },
       extraKeys: [],
       sample: {
         course_name: "Integrated Science",
@@ -123,12 +120,18 @@ const TEMPLATE_REGISTRY = (() => {
           "Maintain an organized science notebook.",
           "Follow all lab safety expectations."
         ],
-        topic1: "Scientific Inquiry",
-        key_content1: "Variables, hypotheses, and fair tests",
-        key_objectives1: "Identify variables and write testable questions",
-        topic2: "Lab Safety",
-        key_content2: "Safety symbols and classroom procedures",
-        key_objectives2: "Apply safety routines during practical work"
+        teaching_plan: [
+          {
+            topic: "Scientific Inquiry",
+            key_content: "Variables, hypotheses, and fair tests",
+            key_objectives: "Identify variables and write testable questions"
+          },
+          {
+            topic: "Lab Safety",
+            key_content: "Safety symbols and classroom procedures",
+            key_objectives: "Apply safety routines during practical work"
+          }
+        ]
       }
     },
     "club-work-plan": {
