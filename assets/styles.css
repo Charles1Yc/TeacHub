@@ -746,6 +746,78 @@ button {
   margin: 18px 0;
 }
 
+.lesson-plan-batch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  background: #eff6ff;
+  padding: 12px;
+}
+
+.lesson-plan-batch-head,
+.lesson-plan-total {
+  grid-column: 1 / -1;
+}
+
+.lesson-plan-batch-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lesson-plan-batch-head p,
+.lesson-plan-batch-head strong,
+.lesson-plan-total {
+  margin: 0;
+}
+
+.lesson-plan-batch-head p {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lesson-plan-batch-head strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lesson-plan-stepper {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lesson-plan-stepper input {
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 0 9px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.lesson-plan-stepper input:focus {
+  outline: 0;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.lesson-plan-total {
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .ai-panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);

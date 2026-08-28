@@ -11,6 +11,10 @@ const els = {
   icon: document.querySelector("#template-icon"),
   prompt: document.querySelector("#prompt-text"),
   jsonInput: document.querySelector("#json-input"),
+  lessonPlanBatch: document.querySelector("#lesson-plan-batch"),
+  lessonPlanWeeks: document.querySelector("#lesson-plan-weeks"),
+  lessonPlanLessons: document.querySelector("#lesson-plan-lessons"),
+  lessonPlanTotal: document.querySelector("#lesson-plan-total"),
   imagePanel: document.querySelector("#image-panel"),
   imageInput: document.querySelector("#image-input"),
   imageList: document.querySelector("#image-list"),
@@ -37,6 +41,9 @@ function initFill() {
   document.querySelector("#validate-json").addEventListener("click", validateJson);
   document.querySelector("#clear-json").addEventListener("click", clearJsonInput);
   document.querySelector("#generate-file").addEventListener("click", generateFile);
+  [els.lessonPlanWeeks, els.lessonPlanLessons].forEach((input) => {
+    input.addEventListener("input", updateLessonPlanBatchSettings);
+  });
   els.imageInput.addEventListener("change", () => {
     addImageFiles(els.imageInput.files);
     els.imageInput.value = "";
@@ -58,7 +65,6 @@ function getAsset() {
 
 function renderTemplate() {
   const cfg = getConfig();
-  const asset = getAsset();
   els.title.textContent = cfg.name;
   els.type.textContent = `${cfg.templateType} 模板`;
   els.icon.textContent = cfg.ext === "xlsx" ? "XL" : "LP";
@@ -70,7 +76,9 @@ function renderTemplate() {
     els.icon.textContent = "报";
     els.icon.className = "tool-icon red";
   }
-  els.prompt.textContent = asset.prompt;
+  els.lessonPlanBatch.hidden = cfg.id !== "lesson-plan";
+  updateLessonPlanBatchSettings(false);
+  els.prompt.textContent = getPromptText();
   els.jsonInput.value = "";
   els.imageInput.value = "";
   state.selectedImages = [];
@@ -78,6 +86,40 @@ function renderTemplate() {
   updateImageList();
   state.parsedItems = [];
   log(`复制 Prompt，打开 AI 工具生成 JSON，再粘贴到右侧生成文件。`);
+}
+
+function getLessonPlanBatchSettings() {
+  const weeks = constrainLessonPlanSetting(els.lessonPlanWeeks.value, 1, 20);
+  const lessonsPerWeek = constrainLessonPlanSetting(els.lessonPlanLessons.value, 1, 10);
+  return {
+    weeks,
+    lessonsPerWeek,
+    total: weeks * lessonsPerWeek
+  };
+}
+
+function constrainLessonPlanSetting(value, min, max) {
+  const number = Number.parseInt(value, 10);
+  if (!Number.isFinite(number)) return min;
+  return Math.min(Math.max(number, min), max);
+}
+
+function updateLessonPlanBatchSettings(updatePrompt = true) {
+  const settings = getLessonPlanBatchSettings();
+  els.lessonPlanWeeks.value = settings.weeks;
+  els.lessonPlanLessons.value = settings.lessonsPerWeek;
+  els.lessonPlanTotal.textContent = `共 ${settings.total} 节`;
+  if (updatePrompt && getConfig().id === "lesson-plan") {
+    els.prompt.textContent = getPromptText();
+    state.parsedItems = [];
+  }
+}
+
+function getPromptText() {
+  const prompt = getAsset().prompt;
+  if (getConfig().id !== "lesson-plan") return prompt;
+  const settings = getLessonPlanBatchSettings();
+  return `${prompt}\n\nBatch lesson plan requirements:\n- Number of weeks: ${settings.weeks}\n- Lessons per week: ${settings.lessonsPerWeek}\n- Total Lesson Plan JSON objects required: ${settings.total}\n- Output one JSON array with exactly ${settings.total} objects, ordered as Week 1 Lesson 1 through Week ${settings.weeks} Lesson ${settings.lessonsPerWeek}.\n- In every object, set week to the matching Week number and lesson to the matching Lesson number.\n- Do not omit, merge, or add lessons.`;
 }
 
 function addImageFiles(fileList) {
@@ -150,7 +192,7 @@ function handleImageDrop(event) {
 
 async function copyPrompt() {
   try {
-    await navigator.clipboard.writeText(getAsset().prompt);
+    await navigator.clipboard.writeText(getPromptText());
     showToast("Prompt 已复制");
   } catch (_error) {
     showToast("当前浏览器限制剪贴板，请手动选中复制");
@@ -158,7 +200,14 @@ async function copyPrompt() {
 }
 
 function loadSample() {
-  els.jsonInput.value = JSON.stringify(getConfig().sample, null, 2);
+  const cfg = getConfig();
+  if (cfg.id === "lesson-plan") {
+    const settings = getLessonPlanBatchSettings();
+    const samples = Array.from({ length: settings.total }, (_value, index) => buildLessonPlanItem(cfg.sample, index));
+    els.jsonInput.value = JSON.stringify(samples, null, 2);
+  } else {
+    els.jsonInput.value = JSON.stringify(cfg.sample, null, 2);
+  }
   validateJson();
 }
 
@@ -205,7 +254,25 @@ function parseInputJson() {
   if (getConfig().id === "course-syllabus" && normalised.some((item) => !item.teaching_plan.length)) {
     throw new Error("课程大纲至少需要提供 1 条 teaching_plan。");
   }
+  if (getConfig().id === "lesson-plan") {
+    const settings = getLessonPlanBatchSettings();
+    if (normalised.length !== settings.total) {
+      throw new Error(`当前设置需要 ${settings.weeks} 周 × 每周 ${settings.lessonsPerWeek} 节，共 ${settings.total} 条 Lesson Plan JSON 记录。`);
+    }
+    return normalised.map((item, index) => buildLessonPlanItem(item, index));
+  }
   return normalised;
+}
+
+function buildLessonPlanItem(item, index) {
+  const settings = getLessonPlanBatchSettings();
+  const week = Math.floor(index / settings.lessonsPerWeek) + 1;
+  const lesson = (index % settings.lessonsPerWeek) + 1;
+  return {
+    ...item,
+    week: `Week ${week}`,
+    lesson: String(lesson)
+  };
 }
 
 function normaliseItem(item, cfg) {
@@ -299,6 +366,19 @@ async function generateFile() {
       });
     }
 
+    if (cfg.id === "lesson-plan" && rendered.length > 1) {
+      const settings = getLessonPlanBatchSettings();
+      const zip = new JSZip();
+      rendered.forEach((file, index) => {
+        zip.file(buildLessonPlanZipPath(index), file.blob);
+      });
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipName = `${sanitizeFileName(cfg.defaultPrefix)}-${dateStamp()}.zip`;
+      downloadBlob(zipBlob, zipName);
+      log(`已生成 ${settings.weeks} 周、每周 ${settings.lessonsPerWeek} 节的 Lesson Plan 压缩包。`);
+      return;
+    }
+
     if (rendered.length === 1) {
       downloadBlob(rendered[0].blob, rendered[0].name);
       log(`已生成：${rendered[0].name}`);
@@ -314,6 +394,13 @@ async function generateFile() {
   } catch (error) {
     log(`生成失败：${error.message}`, true);
   }
+}
+
+function buildLessonPlanZipPath(index) {
+  const settings = getLessonPlanBatchSettings();
+  const week = Math.floor(index / settings.lessonsPerWeek) + 1;
+  const lesson = (index % settings.lessonsPerWeek) + 1;
+  return `week${week}/Lesson Plan${lesson}.docx`;
 }
 
 async function renderDocx(data) {
@@ -805,8 +892,7 @@ async function renderWeeklyBriefPng(data, images) {
 }
 
 function getWeeklyBriefBaseSource() {
-  const asset = getAsset();
-  return asset.slideBase64 ? `data:image/png;base64,${asset.slideBase64}` : WEEKLY_BRIEF_BASE_IMAGE;
+  return WEEKLY_BRIEF_BASE_IMAGE;
 }
 
 function drawWeeklyBriefImages(ctx, loadedImages) {
