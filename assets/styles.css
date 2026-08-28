@@ -757,6 +757,7 @@ button {
   padding: 10px 12px;
 }
 
+.lesson-plan-range,
 .lesson-plan-stepper {
   display: flex;
   align-items: center;
@@ -767,6 +768,7 @@ button {
   white-space: nowrap;
 }
 
+.lesson-plan-range input,
 .lesson-plan-stepper input {
   min-height: 40px;
   width: 58px;
@@ -779,6 +781,7 @@ button {
   font-size: 14px;
 }
 
+.lesson-plan-range input:focus,
 .lesson-plan-stepper input:focus {
   outline: 0;
   border-color: #2563eb;

@@ -12,7 +12,8 @@ const els = {
   prompt: document.querySelector("#prompt-text"),
   jsonInput: document.querySelector("#json-input"),
   lessonPlanBatch: document.querySelector("#lesson-plan-batch"),
-  lessonPlanWeeks: document.querySelector("#lesson-plan-weeks"),
+  lessonPlanStartWeek: document.querySelector("#lesson-plan-start-week"),
+  lessonPlanEndWeek: document.querySelector("#lesson-plan-end-week"),
   lessonPlanLessons: document.querySelector("#lesson-plan-lessons"),
   lessonPlanTotal: document.querySelector("#lesson-plan-total"),
   imagePanel: document.querySelector("#image-panel"),
@@ -41,7 +42,7 @@ function initFill() {
   document.querySelector("#validate-json").addEventListener("click", validateJson);
   document.querySelector("#clear-json").addEventListener("click", clearJsonInput);
   document.querySelector("#generate-file").addEventListener("click", generateFile);
-  [els.lessonPlanWeeks, els.lessonPlanLessons].forEach((input) => {
+  [els.lessonPlanStartWeek, els.lessonPlanEndWeek, els.lessonPlanLessons].forEach((input) => {
     input.addEventListener("input", updateLessonPlanBatchSettings);
   });
   els.imageInput.addEventListener("change", () => {
@@ -89,12 +90,15 @@ function renderTemplate() {
 }
 
 function getLessonPlanBatchSettings() {
-  const weeks = constrainLessonPlanSetting(els.lessonPlanWeeks.value, 1, 20);
+  const startWeek = constrainLessonPlanSetting(els.lessonPlanStartWeek.value, 1, 52);
+  const endWeek = Math.max(startWeek, constrainLessonPlanSetting(els.lessonPlanEndWeek.value, 1, 52));
   const lessonsPerWeek = constrainLessonPlanSetting(els.lessonPlanLessons.value, 1, 10);
   return {
-    weeks,
+    startWeek,
+    endWeek,
+    weeks: endWeek - startWeek + 1,
     lessonsPerWeek,
-    total: weeks * lessonsPerWeek
+    total: (endWeek - startWeek + 1) * lessonsPerWeek
   };
 }
 
@@ -106,7 +110,8 @@ function constrainLessonPlanSetting(value, min, max) {
 
 function updateLessonPlanBatchSettings(updatePrompt = true) {
   const settings = getLessonPlanBatchSettings();
-  els.lessonPlanWeeks.value = settings.weeks;
+  els.lessonPlanStartWeek.value = settings.startWeek;
+  els.lessonPlanEndWeek.value = settings.endWeek;
   els.lessonPlanLessons.value = settings.lessonsPerWeek;
   els.lessonPlanTotal.textContent = `共 ${settings.total} 节`;
   if (updatePrompt && getConfig().id === "lesson-plan") {
@@ -119,7 +124,7 @@ function getPromptText() {
   const prompt = getAsset().prompt;
   if (getConfig().id !== "lesson-plan") return prompt;
   const settings = getLessonPlanBatchSettings();
-  return `${prompt}\n\nBatch lesson plan requirements:\n- Number of weeks: ${settings.weeks}\n- Lessons per week: ${settings.lessonsPerWeek}\n- Total Lesson Plan JSON objects required: ${settings.total}\n- Output one JSON array with exactly ${settings.total} objects, ordered as Week 1 Lesson 1 through Week ${settings.weeks} Lesson ${settings.lessonsPerWeek}.\n- In every object, set week to the matching Week number and lesson to the matching Lesson number.\n- Do not omit, merge, or add lessons.`;
+  return `${prompt}\n\nBatch lesson plan requirements:\n- Week range: Week ${settings.startWeek} through Week ${settings.endWeek} (inclusive)\n- Number of weeks in the range: ${settings.weeks}\n- Lessons per week: ${settings.lessonsPerWeek}\n- Total Lesson Plan JSON objects required: ${settings.total}\n- Output one JSON array with exactly ${settings.total} objects, ordered as Week ${settings.startWeek} Lesson 1 through Week ${settings.endWeek} Lesson ${settings.lessonsPerWeek}.\n- In every object, set week to the matching Week number in the selected range and lesson to the matching Lesson number.\n- Do not omit, merge, or add lessons.`;
 }
 
 function addImageFiles(fileList) {
@@ -257,7 +262,7 @@ function parseInputJson() {
   if (getConfig().id === "lesson-plan") {
     const settings = getLessonPlanBatchSettings();
     if (normalised.length !== settings.total) {
-      throw new Error(`当前设置需要 ${settings.weeks} 周 × 每周 ${settings.lessonsPerWeek} 节，共 ${settings.total} 条 Lesson Plan JSON 记录。`);
+      throw new Error(`当前设置为第 ${settings.startWeek}-${settings.endWeek} 周、每周 ${settings.lessonsPerWeek} 节，共 ${settings.total} 条 Lesson Plan JSON 记录。`);
     }
     return normalised.map((item, index) => buildLessonPlanItem(item, index));
   }
@@ -266,7 +271,7 @@ function parseInputJson() {
 
 function buildLessonPlanItem(item, index) {
   const settings = getLessonPlanBatchSettings();
-  const week = Math.floor(index / settings.lessonsPerWeek) + 1;
+  const week = settings.startWeek + Math.floor(index / settings.lessonsPerWeek);
   const lesson = (index % settings.lessonsPerWeek) + 1;
   return {
     ...item,
@@ -375,7 +380,7 @@ async function generateFile() {
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const zipName = `${sanitizeFileName(cfg.defaultPrefix)}-${dateStamp()}.zip`;
       downloadBlob(zipBlob, zipName);
-      log(`已生成 ${settings.weeks} 周、每周 ${settings.lessonsPerWeek} 节的 Lesson Plan 压缩包。`);
+      log(`已生成第 ${settings.startWeek}-${settings.endWeek} 周、每周 ${settings.lessonsPerWeek} 节的 Lesson Plan 压缩包。`);
       return;
     }
 
@@ -398,7 +403,7 @@ async function generateFile() {
 
 function buildLessonPlanZipPath(index) {
   const settings = getLessonPlanBatchSettings();
-  const week = Math.floor(index / settings.lessonsPerWeek) + 1;
+  const week = settings.startWeek + Math.floor(index / settings.lessonsPerWeek);
   const lesson = (index % settings.lessonsPerWeek) + 1;
   return `week${week}/Lesson Plan${lesson}.docx`;
 }

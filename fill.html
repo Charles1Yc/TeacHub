@@ -28,13 +28,17 @@
         </div>
 
         <section class="lesson-plan-batch" id="lesson-plan-batch" hidden aria-label="Lesson Plan 批量设置">
-          <label class="lesson-plan-stepper" for="lesson-plan-weeks">
-            <span>周数</span>
-            <input id="lesson-plan-weeks" type="number" min="1" max="20" step="1" value="1">
-          </label>
+          <div class="lesson-plan-range" role="group" aria-label="周数范围">
+            <span>从</span>
+            <input id="lesson-plan-start-week" type="number" min="1" max="52" step="1" value="1" aria-label="起始周">
+            <span>-</span>
+            <input id="lesson-plan-end-week" type="number" min="1" max="52" step="1" value="1" aria-label="结束周">
+            <span>周</span>
+          </div>
           <label class="lesson-plan-stepper" for="lesson-plan-lessons">
-            <span>每周课次数</span>
+            <span>每周</span>
             <input id="lesson-plan-lessons" type="number" min="1" max="10" step="1" value="1">
+            <span>次课</span>
           </label>
           <output class="lesson-plan-total" id="lesson-plan-total">共 1 节</output>
         </section>
