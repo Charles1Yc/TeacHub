@@ -35,6 +35,7 @@ function initFill() {
   document.querySelector("#copy-prompt").addEventListener("click", copyPrompt);
   document.querySelector("#load-sample").addEventListener("click", loadSample);
   document.querySelector("#validate-json").addEventListener("click", validateJson);
+  document.querySelector("#clear-json").addEventListener("click", clearJsonInput);
   document.querySelector("#generate-file").addEventListener("click", generateFile);
   els.imageInput.addEventListener("change", () => {
     addImageFiles(els.imageInput.files);
@@ -159,6 +160,14 @@ async function copyPrompt() {
 function loadSample() {
   els.jsonInput.value = JSON.stringify(getConfig().sample, null, 2);
   validateJson();
+}
+
+function clearJsonInput() {
+  els.jsonInput.value = "";
+  state.parsedItems = [];
+  log("JSON 内容已清空。");
+  showToast("JSON 已清空");
+  els.jsonInput.focus();
 }
 
 function validateJson() {
