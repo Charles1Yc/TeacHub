@@ -155,7 +155,7 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-document.querySelectorAll(".tab").forEach((tab) => {
+document.querySelectorAll(".tab[data-view]").forEach((tab) => {
   tab.addEventListener("click", () => {
     activeView = tab.dataset.view;
     const url = new URL(window.location.href);
