@@ -19,19 +19,6 @@ function item(id, name, description, icon, color, tags, extra = {}) {
 }
 
 const VIEWS = {
-  monthly: {
-    label: "月度总结",
-    sections: [{
-      id: "subject-quality",
-      title: "学科质量分析",
-      items: [item("subject-quality-analysis", "学科质量分析", "导入成绩，编辑分析表，复制数据或下载 Excel。", "析", "red", ["Excel", "本地"], {
-        type: "成绩分析",
-        path: "quality-analysis.html",
-        input: "班级成绩 XLSX",
-        output: "Excel 质量分析表"
-      })]
-    }]
-  },
   templates: {
     label: "模板填充",
     sections: [
@@ -90,6 +77,18 @@ const VIEWS = {
             output: "PNG 简报图片",
             fillTemplate: "weekly-brief",
             note: "适合生成可直接发送或粘贴到文档中的周工作简报图片。"
+          })
+        ]
+      },
+      {
+        id: "monthly-summaries",
+        title: "月度总结",
+        items: [
+          item("subject-quality-analysis", "学科质量分析", "导入成绩，编辑分析表，复制数据或下载 Excel。", "析", "red", ["Excel", "本地"], {
+            type: "成绩分析",
+            path: "quality-analysis.html",
+            input: "班级成绩 XLSX",
+            output: "Excel 质量分析表"
           })
         ]
       }
