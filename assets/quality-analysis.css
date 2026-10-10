@@ -1,15 +1,23 @@
 .quality-shell { max-width: 1900px; padding: 28px; margin: 0 auto; display: grid; gap: 22px; min-width: 0; }
 .quality-shell .fill-panel { min-width: 0; }
 .quality-shell h2 { font-size: 20px; margin: 0 0 12px; }
-.quality-controls, .quality-fields { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin: 20px 0; }
+.quality-nav nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+.quality-nav nav > span:not([aria-current]) { color: #cbd5e1; }
+.quality-upload-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .quality-shell label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; }
 .quality-shell input, .quality-shell select { max-width: 100%; min-height: 40px; padding: 9px; border: 1px solid #cbd5e1; border-radius: var(--radius); background: #fff; color: var(--ink); font: inherit; }
-.quality-upload { flex: 1; min-width: 250px; }
-.quality-upload input { border-style: dashed; width: 100%; }
-.quality-controls a { text-decoration: none; }
+.quality-shell .quality-upload { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; min-height: 230px; margin-top: 20px; padding: 28px; border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+.quality-upload:hover, .quality-upload:focus-within, .quality-upload.is-dragging { border-color: #9f2633; background: #fff7f7; }
+.quality-upload strong { color: var(--ink); font-size: 18px; }
+.quality-upload-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: #fbe8e2; color: #9f2633; font-size: 30px; }
+.quality-shell .quality-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.quality-file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.quality-file-list[hidden] { display: none; }
+.quality-file-list span { background: #f1f5f9; color: #475569; border-radius: 6px; padding: 7px 10px; font-size: 13px; }
+.quality-status { margin-top: 12px; font-size: 13px; color: #475569; }
+.quality-status.is-error { color: #b91c1c; }
 .quality-class { border-top: 1px solid var(--line); padding: 15px 0 0; }
 .quality-class h3 { margin: 0; font-size: 16px; }
-.quality-fields input[type="number"] { width: 128px; }
 .quality-table-wrap { overflow-x: auto; }
 .quality-table { border-collapse: collapse; width: 100%; min-width: 1650px; font-size: 13px; table-layout: fixed; }
 .quality-table th { color: #fff; background: #9f2633; text-align: center; }
@@ -27,8 +35,5 @@
 .quality-student-table { border-collapse: collapse; margin-top: 14px; width: min(100%,800px); }
 .quality-student-table th,.quality-student-table td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
 .quality-student-table input { width: 120px; background: #fff2cc; }
-.quality-help summary { cursor: pointer; font-weight: bold; }
-.quality-help li { margin: 8px 0; line-height: 1.6; }
 .quality-shell button:disabled { opacity: .5; cursor: default; }
-.quality-warning { color: #9a3412; margin: 12px 0; font-size: 13px; }
-@media (max-width: 600px) { .quality-shell { padding: 18px; } .quality-controls { display: grid; grid-template-columns: minmax(0,1fr); align-items: stretch; } .quality-upload { min-width: 0; width: 100%; } .quality-controls a { text-align: center; } }
+@media (max-width: 600px) { .quality-shell { padding: 18px; } .quality-upload-head { align-items: flex-start; flex-direction: column; } .quality-shell .quality-upload { min-height: 210px; padding: 20px; } .quality-nav nav { gap: 8px; font-size: 13px; } .quality-student-table { min-width: 540px; } .quality-class { overflow-x: auto; } }

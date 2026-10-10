@@ -24,7 +24,7 @@ const VIEWS = {
     sections: [{
       id: "subject-quality",
       title: "学科质量分析",
-      items: [item("subject-quality-analysis", "学科质量分析", "上传班级成绩，核对统计口径后生成 Excel 质量分析表。", "析", "red", ["Excel", "本地"], {
+      items: [item("subject-quality-analysis", "学科质量分析", "导入成绩，编辑分析表，复制数据或下载 Excel。", "析", "red", ["Excel", "本地"], {
         type: "成绩分析",
         path: "quality-analysis.html",
         input: "班级成绩 XLSX",

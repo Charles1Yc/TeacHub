@@ -1,4 +1,5 @@
-let activeView = "templates";
+const requestedView = new URLSearchParams(window.location.search).get("view");
+let activeView = Object.hasOwn(VIEWS, requestedView) ? requestedView : "templates";
 let searchText = "";
 
 const content = document.querySelector("#content");
@@ -157,6 +158,9 @@ function escapeHtml(value) {
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     activeView = tab.dataset.view;
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", activeView);
+    window.history.replaceState(null, "", url);
     searchInput.value = "";
     searchText = "";
     render();

@@ -4,7 +4,7 @@
   const escape=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
   const value=v=>v===null?"":escape(v);
   const display=v=>v===null?"":typeof v==="number"&&!Number.isInteger(v)?v.toFixed(2):escape(v);
-  function message(text,error=false){status.textContent=text;status.classList.toggle("is-error",error);}
+  function message(text,error=false){status.textContent=text;status.hidden=!text;status.classList.toggle("is-error",error);}
   function applyThresholds(){
     groups.forEach(g=>{["excellent","good","pass"].forEach((key,i)=>{const input=document.querySelector(`[data-threshold="${i}"]`);g.options[key]=input.value===""?null:Number(input.value);g.options.operators[i]=document.querySelector(`[data-threshold-operator="${i}"]`).value;});});
   }
@@ -25,9 +25,8 @@
       else {
         [...preview.rows].forEach((row,i)=>{const a=results[i];for(const [c,v] of [[2,a.count],[3,a.taken],[4,100],[5,a.max],[6,a.min],[7,a.mean],[9,a.change],[10,a.counts[0]],[12,a.completion[0]],[13,a.counts[1]],[15,a.completion[1]],[16,a.counts[2]],[18,a.completion[2]]])row.cells[c].textContent=[12,15,18].includes(c)?v===null?"":(v*100).toFixed(1)+"%":display(v);});
       }
-      document.querySelector("#quality-notes").textContent=groups.map((g,i)=>`${g.className}：${results[i].taken}/${results[i].count}人有有效最终成绩`).join("；")+"。优秀、良好、合格按各自分数线累计统计，三项人数不能相加。";
       exportButton.disabled=!groups.length||busy;copyButton.disabled=exportButton.disabled;
-      message(`已读取${groups.length}个班级。表头设置分数线，黄色格填写上期均分和目标人数，结果即时更新。`);
+      message("");
     }catch(error){
       [...preview.rows].forEach(row=>[5,6,7,9,10,12,13,15,16,18].forEach(c=>row.cells[c].textContent=""));
       message(error.message,true);
@@ -36,8 +35,9 @@
   async function load(selected){
     if(busy)return;
     const token=++revision;groups=[];busy=true;exportButton.disabled=true;copyButton.disabled=true;
+    const fileList=document.querySelector("#quality-file-list");fileList.replaceChildren();fileList.hidden=true;
     document.querySelector("#quality-settings-panel").hidden=true;document.querySelector("#quality-preview-panel").hidden=true;
-    if(!selected.length){busy=false;message("等待班级数据。");return;}
+    if(!selected.length){busy=false;message("");return;}
     message("正在读取班级数据…");
     try{
       const loaded=[];
@@ -45,29 +45,33 @@
       if(token!==revision)return;
       const keys=new Set();for(const g of loaded){const key=JSON.stringify([g.semester,g.subject,g.className,g.teacher]);if(keys.has(key))throw new Error(`${g.className}：重复上传同一班级，每个班级请保留一份数据。`);keys.add(key);}
       groups=loaded;busy=false;renderStudents();document.querySelector("#quality-settings-panel").hidden=false;document.querySelector("#quality-preview-panel").hidden=false;updatePreview();
+      fileList.innerHTML=loaded.map(g=>`<span>${escape(g.filename)}</span>`).join("");fileList.hidden=false;
     }catch(error){if(token===revision){busy=false;message(error.message,true);}}
   }
   files.addEventListener("change",()=>load([...files.files]));
   document.querySelectorAll("[data-threshold],[data-threshold-operator]").forEach(input=>input.addEventListener("input",()=>updatePreview(false)));
-  const upload=document.querySelector(".quality-upload");upload.addEventListener("dragover",e=>e.preventDefault());upload.addEventListener("drop",e=>{e.preventDefault();load([...e.dataTransfer.files]);});
-  function copiedTable(){
-    const original=document.querySelector("#quality-report"),table=original.cloneNode(true);
+  const upload=document.querySelector(".quality-upload");let dragDepth=0;
+  upload.addEventListener("dragenter",e=>{e.preventDefault();if(!busy){dragDepth++;upload.classList.add("is-dragging");}});
+  upload.addEventListener("dragover",e=>{e.preventDefault();e.dataTransfer.dropEffect=busy?"none":"copy";});
+  upload.addEventListener("dragleave",()=>{dragDepth=Math.max(0,dragDepth-1);if(!dragDepth)upload.classList.remove("is-dragging");});
+  upload.addEventListener("drop",e=>{e.preventDefault();dragDepth=0;upload.classList.remove("is-dragging");load([...e.dataTransfer.files]);});
+  function copiedData(){
+    const original=preview,table=document.createElement("table");table.appendChild(original.cloneNode(true));
     const originals=[...original.querySelectorAll("input,select")];
     [...table.querySelectorAll("input,select")].forEach((control,i)=>control.value=originals[i].value);
     table.style.cssText="border-collapse:collapse;font-family:Arial,'Microsoft YaHei',sans-serif;font-size:11pt;";
     [...table.querySelectorAll("input,select")].forEach(control=>{const text=control.tagName==="SELECT"?control.selectedOptions[0].textContent:control.value;control.replaceWith(document.createTextNode(text));});
-    table.querySelectorAll("th,td").forEach(cell=>{const secondary=cell.tagName==="TH"&&cell.closest("tr").rowIndex>=2;cell.style.cssText=`border:1px solid #222;padding:8px;text-align:center;vertical-align:middle;background:${cell.tagName==="TH"?secondary?"#fbe8e2":"#9f2633":"#ffffff"};color:${cell.tagName==="TH"&&!secondary?"#ffffff":"#222222"};`;});
-    const matrix=[],occupied=[];
-    [...table.rows].forEach((row,r)=>{matrix[r]||=[];occupied[r]||=[];let c=0;[...row.cells].forEach(cell=>{while(occupied[r][c])c++;const text=cell.textContent.trim();for(let rr=r;rr<r+cell.rowSpan;rr++){matrix[rr]||=[];occupied[rr]||=[];for(let cc=c;cc<c+cell.colSpan;cc++){occupied[rr][cc]=true;matrix[rr][cc]=rr===r&&cc===c?text:"";}}c+=cell.colSpan;});});
-    return {html:table.outerHTML,text:matrix.map(row=>Array.from({length:19},(_,i)=>String(row[i]??"").replace(/[\t\r\n]+/g," ")).join("\t")).join("\n")};
+    table.querySelectorAll("td").forEach(cell=>{cell.style.cssText="border:1px solid #222;padding:8px;text-align:center;vertical-align:middle;background:#ffffff;color:#222222;";});
+    const text=[...table.rows].map(row=>[...row.cells].map(cell=>cell.textContent.trim().replace(/[\t\r\n]+/g," ")).join("\t")).join("\n");
+    return {html:table.outerHTML,text};
   }
   copyButton.addEventListener("click",async()=>{
-    const data=copiedTable();
+    const data=copiedData();
     try{
       if(navigator.clipboard?.write&&typeof ClipboardItem!=="undefined")await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([data.html],{type:"text/html"}),"text/plain":new Blob([data.text],{type:"text/plain"})})]);
       else {const handler=e=>{e.clipboardData.setData("text/html",data.html);e.clipboardData.setData("text/plain",data.text);e.preventDefault();};document.addEventListener("copy",handler);let success;try{success=document.execCommand("copy");}finally{document.removeEventListener("copy",handler);}if(!success)throw new Error("浏览器未允许复制，请使用下载Excel。");}
-      message("表格已复制，可粘贴到 Excel 或 Word；支持带格式及纯文本粘贴。");
-    }catch(error){message(`复制失败：${error.message}。可使用下载Excel。`,true);}
+      message("数据已复制");
+    }catch(error){message(`复制失败：${error.message}`,true);}
   });
   exportButton.addEventListener("click",async()=>{
     if(busy)return;busy=true;exportButton.disabled=true;copyButton.disabled=true;files.disabled=true;
@@ -76,7 +80,7 @@
       const month=document.querySelector("#quality-month").value;
       const blob=await QualityAnalysis.exportWorkbook(groups,month),url=URL.createObjectURL(blob),link=document.createElement("a");
       link.href=url;link.download=`${month?month+"-":""}学科质量分析表.xlsx`;link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
-      message("Excel 已生成，包含质量分析表、统计口径和学生明细，保留模板样式与计算公式。");
+      message("Excel 已下载");
     }catch(error){message(error.message,true);}
     finally{busy=false;exportButton.disabled=!groups.length;copyButton.disabled=exportButton.disabled;files.disabled=false;controls.forEach(e=>e.disabled=false);}
   });

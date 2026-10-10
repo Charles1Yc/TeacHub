@@ -114,7 +114,7 @@ const QualityAnalysis = (() => {
     zip.file("xl/styles.xml",serialize(styles));
     const sheetData=tags(doc,"sheetData")[0], sourceRow=tags(sheetData,"row").find(r=>r.getAttribute("r")==="5");
     for (const row of tags(sheetData,"row")) if(Number(row.getAttribute("r"))>=5) row.remove();
-    const detailRows=[["学生成绩明细"],["分析使用最终100分制学期成绩；可在网页修改后导出。空白表示未提供，0分是有效成绩。"],[],["学科","班级","教师","学号","中文名","英文名","原学期成绩","考勤","最终成绩","满分","分析得分","来源文件","来源行","有效成绩"]];
+    const detailRows=[["学生成绩明细"],[],[],["学科","班级","教师","学号","中文名","英文名","原学期成绩","考勤","最终成绩","满分","分析得分","来源文件","来源行","有效成绩"]];
     const detailFormulas={}, settingsRows=[["统计口径"],["考试月份",month||"未提供"],[],["学科","班级","教师","所选成绩","课程满分","分析满分","优秀分数线","良好分数线","合格分数线","上期均分","优秀目标人数","良好目标人数","合格目标人数","来源文件","优秀条件","良好条件","合格条件"]];
     groups.forEach((g,i)=>{
       const result=results[i],o=g.options,p=5+i,r=5+i,start=detailRows.length+1;
@@ -137,8 +137,6 @@ const QualityAnalysis = (() => {
       const cells=values.map((v,c)=>cellXML(`${column(c+1)}${r}`,v,[12,15,18].includes(c)?percentageStyle:c>=5&&c<=9?decimalStyle:dataStyle,formulas[c])).join("");
       const parsed=xml(`<row xmlns="${NS}">${cells}</row>`);for(const child of [...parsed.documentElement.children])row.appendChild(doc.importNode(child,true));sheetData.appendChild(row);
     });
-    const noteStart=groups.length+6;
-    const notes=[`月份：${month||"未提供"}。满分固定100；最高分、最低分和平均分使用最终学期成绩。`,`优秀、良好、合格为累计达标人数。完成率＝达标人数÷目标人数，目标缺失或为0时留空。`,`上期均分手动填写，均分变化＝本期均分－上期均分。空白成绩不会替换为0。`];
     const mergeCells=tags(doc,"mergeCells")[0];
     ["K2","N2","Q2"].forEach((ref,j)=>{
       const target=tags(doc,"c").find(c=>c.getAttribute("r")===ref);const o=groups[0].options,t=[o.excellent,o.good,o.pass][j],name=["优秀","良好","合格"][j];
@@ -146,13 +144,12 @@ const QualityAnalysis = (() => {
       const f=doc.createElementNS(NS,"f");f.textContent=`"${name}"&IF(ISNUMBER('统计口径'!${["G","H","I"][j]}5),'统计口径'!${["O","P","Q"][j]}5&'统计口径'!${["G","H","I"][j]}5,"（未设）")`;target.appendChild(f);
       const v=doc.createElementNS(NS,"v");v.textContent=name+(t===null?"（未设）":(o.operators?.[j]||">=")+t);target.appendChild(v);
     });
-    notes.forEach((note,i)=>{const r=noteStart+i;const row=doc.createElementNS(NS,"row");row.setAttribute("r",String(r));row.setAttribute("ht","28");row.setAttribute("customHeight","1");const parsed=xml(`<row xmlns="${NS}">${cellXML(`A${r}`,note,bodyStyle)}</row>`);row.appendChild(doc.importNode(parsed.documentElement.firstChild,true));sheetData.appendChild(row);const m=doc.createElementNS(NS,"mergeCell");m.setAttribute("ref",`A${r}:S${r}`);mergeCells.appendChild(m);});
     mergeCells.setAttribute("count",String(mergeCells.children.length));
-    tags(doc,"dimension")[0].setAttribute("ref",`A1:S${noteStart+2}`);
+    tags(doc,"dimension")[0].setAttribute("ref",`A1:S${groups.length+4}`);
     let cols=tags(doc,"cols")[0];if(!cols){cols=doc.createElementNS(NS,"cols");sheetData.parentNode.insertBefore(cols,sheetData);}while(cols.firstChild)cols.removeChild(cols.firstChild);
     [24,14,11,11,...Array(15).fill(12)].forEach((width,i)=>{const c=doc.createElementNS(NS,"col");c.setAttribute("min",String(i+1));c.setAttribute("max",String(i+1));c.setAttribute("width",String(width));c.setAttribute("customWidth","1");cols.appendChild(c);});
     zip.file("xl/worksheets/sheet1.xml",serialize(doc));
-    settingsRows.push([], ["来源模板","质量分析表.xlsx"], ["统计说明","参考人数＝有效最终学期成绩数量。无有效成绩时，分数统计与达标人数留空。"], ["分数线说明","优秀、良好、合格按分数线累计统计，三项不能相加；分数线未填时不统计达标人数。"], ["目标说明","目标完成率＝达标人数÷目标人数。上期均分使用相同成绩口径及100分制。"], ["学期",...new Set(groups.map(g=>g.semester))]);
+    settingsRows.push([], ["学期",...new Set(groups.map(g=>g.semester))]);
     zip.file("xl/worksheets/sheet2.xml",supportSheet(settingsRows,[24,26,14,42,14,14,14,14,14,14,16,16,16,24,14,14,14],4,supportStyles));
     zip.file("xl/worksheets/sheet3.xml",supportSheet(detailRows,[24,26,14,14,14,14,14,14,14,14,14,24,12,12],4,supportStyles,detailFormulas));
     const workbook=xml(await zip.file("xl/workbook.xml").async("string")),rels=xml(await zip.file("xl/_rels/workbook.xml.rels").async("string")),types=xml(await zip.file("[Content_Types].xml").async("string"));
