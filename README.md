@@ -9,6 +9,7 @@ TeacHub is a static, offline-friendly teacher work toolkit. It collects template
 - Local file generation in the browser using front-end JavaScript.
 - Teaching, office, and software tool directories with external links.
 - No backend service is required.
+- Monthly summaries with subject quality analysis from school grade-export XLSX files.
 
 ## Usage
 
@@ -23,5 +24,7 @@ For template automation:
 5. Generate and download the local output file.
 
 ## GitHub Pages
+
+For subject quality analysis, open **月度总结 → 学科质量分析** and upload one school grade-export XLSX per class. Final scores come from the 100-point `学期成绩` column. Edit student scores, prior averages, and target counts directly on the page. Set the excellent/good/pass cutoffs and `>` or `≥` operators in the template's headers; counts, average changes, and completion rates update immediately. Thresholds start blank and attainment counts remain blank until set. Completion is attained students divided by target students, and is blank for missing or zero targets. Copy the styled table into Excel/Word or download an XLSX preserving the template, calculation formulas, scoring settings, original scores, and edited final scores. Uploaded student data stays in the browser and is not saved by the site.
 
 This project is designed to run as a static site. All template and image generation happens in the user's browser.

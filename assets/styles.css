@@ -48,7 +48,7 @@ button {
   z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 68px;
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.96);
@@ -96,7 +96,7 @@ button {
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
   min-height: 42px;
-  width: min(360px, 26vw);
+  width: min(280px, 23vw);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #f9fafc;

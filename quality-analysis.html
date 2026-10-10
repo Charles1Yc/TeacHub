@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TeacHub - 学科质量分析</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/quality-analysis.css">
+  </head>
+  <body class="fill-page">
+    <header class="fill-topbar"><a class="back-link" href="index.html">← 返回首页</a><span>月度总结</span></header>
+    <main class="quality-shell">
+      <section class="fill-panel">
+        <div class="fill-heading"><span class="tool-icon red" aria-hidden="true">析</span><div><p>月度总结</p><h1>学科质量分析</h1></div></div>
+        <p class="muted-text">上传学校导出的“成绩详情”Excel，每个班级一份。使用最终100分制学期成绩，填写分数线、上期均分和目标人数后，自动生成分析表。数据在浏览器本地处理。</p>
+        <div class="quality-controls">
+          <label>考试月份（可选）<input id="quality-month" type="month"></label>
+          <label class="quality-upload">班级数据（可多选或拖入）<input id="quality-files" type="file" accept=".xlsx" multiple></label>
+          <a class="action secondary" href="templates/subject-quality-analysis.xlsx" download>下载空白分析模板</a>
+        </div>
+        <div id="quality-status" class="log-box" role="status" aria-live="polite">等待班级数据。最终成绩取源表“学期成绩”列，满分固定100；“学期绩点”不直接作为分数。</div>
+      </section>
+      <section id="quality-settings-panel" class="fill-panel" hidden>
+        <h2>核对与修改最终成绩</h2>
+        <p class="muted-text">可修改下方学生最终成绩，分析表即时更新。空白成绩不计入参考人数，0分计入。修改仅影响本次分析，原始分数保留在导出明细中。</p>
+        <div id="quality-settings"></div>
+      </section>
+      <section id="quality-preview-panel" class="fill-panel" hidden>
+        <div class="editor-head"><h2>质量分析表</h2><div class="editor-actions"><button id="quality-copy" class="action secondary" type="button" disabled>复制表格</button><button id="quality-export" class="action" type="button" disabled>下载 Excel</button></div></div>
+        <div class="quality-table-wrap"><table id="quality-report" class="quality-table">
+          <thead>
+            <tr><th rowspan="4">学科</th><th rowspan="4">教师</th><th rowspan="4">学生人数</th><th rowspan="4">参考人数</th><th colspan="6" rowspan="2">整体分析</th><th colspan="9">目标完成情况</th></tr>
+            <tr>
+              <th colspan="3" class="quality-threshold">优秀 <select data-threshold-operator="0" aria-label="优秀比较条件"><option value=">=">≥</option><option value=">">&gt;</option></select><input data-threshold="0" aria-label="优秀分数线" type="number" min="0" max="100" step="0.01" placeholder="分数线"></th>
+              <th colspan="3" class="quality-threshold">良好 <select data-threshold-operator="1" aria-label="良好比较条件"><option value=">=">≥</option><option value=">">&gt;</option></select><input data-threshold="1" aria-label="良好分数线" type="number" min="0" max="100" step="0.01" placeholder="分数线"></th>
+              <th colspan="3" class="quality-threshold">合格 <select data-threshold-operator="2" aria-label="合格比较条件"><option value=">=">≥</option><option value=">">&gt;</option></select><input data-threshold="2" aria-label="合格分数线" type="number" min="0" max="100" step="0.01" placeholder="分数线"></th>
+            </tr>
+            <tr><th rowspan="2">满分</th><th rowspan="2">最高分</th><th rowspan="2">最低分</th><th rowspan="2">平均分</th><th>上期</th><th>均分</th><th>达标</th><th rowspan="2">目标人数</th><th rowspan="2">完成率</th><th>达标</th><th rowspan="2">目标人数</th><th rowspan="2">完成率</th><th>达标</th><th rowspan="2">目标人数</th><th rowspan="2">完成率</th></tr>
+            <tr><th>均分</th><th>变化</th><th>人数</th><th>人数</th><th>人数</th></tr>
+          </thead><tbody id="quality-preview"></tbody>
+        </table></div>
+        <p class="muted-text">黄色格可填写：学科、教师、上期均分和目标人数。表头可设置分数线与“&gt; / ≥”。其余结果自动计算。</p>
+        <p id="quality-notes" class="muted-text"></p>
+      </section>
+      <details class="fill-panel quality-help"><summary>每个栏目的功能</summary>
+        <ul><li>学科、教师：从班级数据读取，可修改展示名称。</li><li>学生人数：源表学生记录数；参考人数：有有效最终成绩的人数。</li><li>满分：固定100分。最高分、最低分、平均分：按最终学期成绩自动统计，空白不参与。</li><li>上期均分：手动填写。均分变化＝本期均分－上期均分，正值表示提高，负值表示下降。</li><li>优秀、良好、合格：手动设定分数线及比较条件，自动写入对应表头，按条件统计达标人数。三类为累计达标口径。</li><li>目标人数：手动填写非负整数。完成率＝达标人数÷目标人数；目标未填或为0时留空，可超过100%。</li><li>复制表格：复制带格式的表格及纯文本，便于粘贴到Excel或Word。下载Excel：保留模板配色、多层表头和计算公式。</li></ul>
+      </details>
+    </main>
+    <script src="vendor/jszip.min.js"></script>
+    <script src="assets/quality-template.js"></script>
+    <script src="assets/quality-analysis-core.js"></script>
+    <script src="assets/quality-analysis.js"></script>
+  </body>
+</html>

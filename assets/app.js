@@ -93,6 +93,11 @@ function handleCardClick(sectionId, itemId) {
     return;
   }
 
+  if (entry.id === "subject-quality-analysis") {
+    window.location.href = entry.path;
+    return;
+  }
+
   const params = new URLSearchParams({
     view: activeView,
     section: sectionId,
